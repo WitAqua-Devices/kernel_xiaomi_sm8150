@@ -3358,7 +3358,41 @@ static enum power_supply_property smb5_batt_props[] = {
 #endif
 	POWER_SUPPLY_PROP_DC_THERMAL_LEVELS,
 #endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	POWER_SUPPLY_PROP_STATE_OF_HEALTH,
+	POWER_SUPPLY_PROP_MODEL_NAME,
+	POWER_SUPPLY_PROP_SERIAL_NUMBER,
+	POWER_SUPPLY_PROP_BATT_SN,
+#endif
 };
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+/*
+ * The pack has no serial number of its own, so report the ROM ID of its
+ * DS28E16 authentication chip. The ID never changes while running, and
+ * every read costs a 1-Wire transaction, so keep the first good one.
+ */
+static int smb5_get_prop_batt_sn(struct smb_charger *chg,
+				 union power_supply_propval *val)
+{
+	union power_supply_propval pval = {0, };
+	int rc;
+
+	if (!chg->batt_sn[0]) {
+		rc = smblib_get_prop_from_bms(chg, POWER_SUPPLY_PROP_ROMID,
+					      &pval);
+		if (rc < 0)
+			return -ENODATA;
+		if (!memchr_inv(pval.arrayval, 0, 8))
+			return -ENODATA;
+		snprintf(chg->batt_sn, sizeof(chg->batt_sn), "%8phN",
+			 pval.arrayval);
+	}
+
+	val->strval = chg->batt_sn;
+	return 0;
+}
+#endif
 
 #define DEBUG_ACCESSORY_TEMP_DECIDEGC	250
 static int smb5_batt_get_prop(struct power_supply *psy,
@@ -3505,6 +3539,22 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 		rc = smblib_get_prop_from_bms(chg,
 				POWER_SUPPLY_PROP_CYCLE_COUNT, val);
 		break;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	case POWER_SUPPLY_PROP_STATE_OF_HEALTH:
+		/* hvdcp_opti publishes SOH after boot; 0 means not yet known */
+		rc = smblib_get_prop_from_bms(chg, POWER_SUPPLY_PROP_SOH, val);
+		if (!rc && val->intval <= 0)
+			rc = -ENODATA;
+		break;
+	case POWER_SUPPLY_PROP_MODEL_NAME:
+		rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_BATTERY_TYPE, val);
+		break;
+	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
+	case POWER_SUPPLY_PROP_BATT_SN:
+		rc = smb5_get_prop_batt_sn(chg, val);
+		break;
+#endif
 	case POWER_SUPPLY_PROP_RECHARGE_SOC:
 		val->intval = chg->auto_recharge_soc;
 		break;

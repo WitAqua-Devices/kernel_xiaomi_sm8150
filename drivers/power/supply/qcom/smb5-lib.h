@@ -1000,6 +1000,8 @@ struct smb_charger {
 #endif
 #ifdef CONFIG_MACH_XIAOMI_NABU
 	int			reverse_gpio_state;
+	/* ROM ID of the battery authentication chip as hex */
+	char			batt_sn[17];
 #endif
 
 	/* workaround flag */

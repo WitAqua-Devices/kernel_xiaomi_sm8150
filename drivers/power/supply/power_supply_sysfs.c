@@ -680,6 +680,9 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(rx_op_ble),
 	POWER_SUPPLY_ATTR(op_ble),
 #endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	POWER_SUPPLY_ATTR(state_of_health),
+#endif
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
@@ -688,6 +691,9 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(serial_number),
 	POWER_SUPPLY_ATTR(battery_type),
 	POWER_SUPPLY_ATTR(cycle_counts),
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	POWER_SUPPLY_ATTR(batt_sn),
+#endif
 };
 
 static struct attribute *
